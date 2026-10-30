@@ -1,0 +1,45 @@
+services:
+
+  namenode:
+    build:
+      context: ./docker
+    container_name: namenode
+    hostname: namenode
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    volumes:
+      - namenode_data:/opt/hadoop/dfs/name
+      - ./:/workspace
+    environment:
+      - ENSURE_NAMENODE_DIR=/opt/hadoop/dfs/name
+    command: >
+      bash -c '
+        if [ ! -f /opt/hadoop/dfs/name/current/VERSION ]; then
+          echo "NameNode is not formatted. Formatting now..."
+          hdfs namenode -format -force
+        else
+          echo "NameNode is already formatted. Reusing existing data."
+        fi;
+        exec hdfs namenode
+      '
+
+  datanode:
+    build:
+      context: ./docker
+    container_name: datanode
+    hostname: datanode
+    depends_on:
+      - namenode
+    ports:
+      - "9864:9864"
+    volumes:
+      - datanode_data:/opt/hadoop/dfs/data
+    command: >
+      bash -c "
+        hdfs datanode
+      "
+
+volumes:
+  namenode_data:
+  datanode_data:
